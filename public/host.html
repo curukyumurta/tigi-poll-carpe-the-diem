@@ -11,6 +11,8 @@
   <div id="hostPanel">
     <button id="createRoomBtn">CREATE ROOM</button>
     <button id="startBtn" disabled>START ROUND</button>
+    <button id="secretBtn" disabled>???</button>
+
     <div class="link" id="links"></div>
     <div id="qr"></div>
   </div>
@@ -22,6 +24,8 @@
 
     const createRoomBtn = document.getElementById("createRoomBtn");
     const startBtn = document.getElementById("startBtn");
+    const secretBtn = document.getElementById("secretBtn");
+
     const linksEl = document.getElementById("links");
     const qrEl = document.getElementById("qr");
     const preview = document.getElementById("preview");
@@ -48,6 +52,11 @@
       });
     }
 
+    function enableHostButtons(){
+      startBtn.disabled = false;
+      secretBtn.disabled = false;
+    }
+
     async function createRoom(){
       const r = await fetch("/api/create-room", { method: "POST" });
       const data = await r.json();
@@ -67,19 +76,26 @@
 
       if (socket) socket.disconnect();
       socket = io();
+
       socket.on("connect", () => {
         socket.emit("join", { roomId, role: "host", hostToken });
       });
-      socket.on("state", () => startBtn.disabled = false);
+
+      socket.on("state", () => {
+        enableHostButtons();
+      });
+
       socket.on("error_msg", (m) => alert(m));
 
-      startBtn.disabled = false;
+      // Oda oluşturulduğu an da butonları aç
+      enableHostButtons();
     }
 
     function bootFromParams(){
       const p = new URLSearchParams(location.search);
       const r = p.get("room");
       const t = p.get("token");
+
       if (r && t){
         roomId = r;
         hostToken = t;
@@ -96,13 +112,18 @@
         setPreview();
 
         socket = io();
+
         socket.on("connect", () => {
           socket.emit("join", { roomId, role: "host", hostToken });
         });
-        socket.on("state", () => startBtn.disabled = false);
+
+        socket.on("state", () => {
+          enableHostButtons();
+        });
+
         socket.on("error_msg", (m) => alert(m));
 
-        startBtn.disabled = false;
+        enableHostButtons();
       }
     }
 
@@ -111,6 +132,12 @@
     startBtn.addEventListener("click", () => {
       if (!socket || !roomId || !hostToken) return;
       socket.emit("host_start", { roomId, hostToken });
+    });
+
+    // ✅ Gizli buton: herkesin ekranında yazıyı göster
+    secretBtn.addEventListener("click", () => {
+      if (!socket || !roomId || !hostToken) return;
+      socket.emit("host_secret", { roomId, hostToken });
     });
 
     bootFromParams();

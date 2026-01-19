@@ -32,6 +32,11 @@
     </div>
   </div>
 
+  <!-- 🔴 SECRET OVERLAY (HTML – body'nin içinde) -->
+  <div id="secretOverlay" style="display:none;">
+    <div id="secretText">KONTROL SENDE MI SANIYORSUN ?</div>
+  </div>
+
   <script type="module">
     import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
     import { getPlayerId, GREENS, SFX, setupCanvas, clearCanvas, drawPixel, setLevelText, renderTimeBlocks } from "/common.js";
@@ -43,7 +48,7 @@
     }
 
     const playerId = getPlayerId();
-    const socket = io(); // same origin
+    const socket = io();
 
     const boxA = document.getElementById("boxA");
     const boxB = document.getElementById("boxB");
@@ -52,6 +57,10 @@
     const countdownEl = document.getElementById("countdown");
     const blocksEl = document.getElementById("timeBlocks");
     const levelEl = document.getElementById("level");
+
+    // 🔴 SECRET ELEMENTLER (JS tarafı)
+    const secretOverlay = document.getElementById("secretOverlay");
+    const secretText = document.getElementById("secretText");
 
     const ca = setupCanvas(canvasA);
     const cb = setupCanvas(canvasB);
@@ -80,10 +89,9 @@
     function showWinner(winner){
       if (winner === "A") boxA.classList.add("winnerA");
       if (winner === "B") boxB.classList.add("winnerB");
-      // TIE: hiçbir şey
     }
 
-    // Click handlers: ses anında çalar, sonra oy gönderilir
+    // Click handlers
     boxA.addEventListener("click", async () => {
       if (phase !== "VOTING") return;
       if (votedThisRound) return;
@@ -114,22 +122,20 @@
       if (phase !== "VOTING") setDisabled(true);
     });
 
-socket.on("round_started", async ({ level, endsAt: ea }) => {
-  phase = "VOTING";
-  endsAt = ea;
-  setLevelText(levelEl, level);
-  votedThisRound = false;
-  setDisabled(false);
+    socket.on("round_started", async ({ level, endsAt: ea }) => {
+      phase = "VOTING";
+      endsAt = ea;
+      setLevelText(levelEl, level);
+      votedThisRound = false;
+      setDisabled(false);
 
-  clearCanvas(ca.ctx, canvasA);
-  clearCanvas(cb.ctx, canvasB);
-  boxA.classList.remove("winnerA");
-  boxB.classList.remove("winnerB");
+      clearCanvas(ca.ctx, canvasA);
+      clearCanvas(cb.ctx, canvasB);
+      boxA.classList.remove("winnerA");
+      boxB.classList.remove("winnerB");
 
-  // 🔊 ROUND START JINGLE
-  await SFX.roundStart();
-});
-
+      await SFX.roundStart();
+    });
 
     socket.on("spawn", ({ choice, x, y, colorIndex }) => {
       const color = GREENS[colorIndex] || GREENS[1];
@@ -149,6 +155,19 @@ socket.on("round_started", async ({ level, endsAt: ea }) => {
       endsAt = null;
       setLevelText(levelEl, level);
       resetVisual();
+    });
+
+    // 🔴 SECRET SCREEN EVENT (HERKESTE ÇIKAR)
+    socket.on("secret_screen", ({ text }) => {
+      secretText.textContent = text || "KONTROL SENDE MI SANIYORSUN ?";
+      secretOverlay.style.display = "flex";
+
+      // gizli ekran varken oy kilitli
+      setDisabled(true);
+
+      setTimeout(() => {
+        secretOverlay.style.display = "none";
+      }, 2500);
     });
 
     function tick(){

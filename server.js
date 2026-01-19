@@ -105,6 +105,17 @@ app.post("/api/create-room", (req, res) => {
 });
 
 io.on("connection", (socket) => {
+  // ✅ Gizli ekran: host tetikler, herkes görür
+  socket.on("host_secret", ({ roomId, hostToken }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    if (hostToken !== room.hostToken) return;
+
+    io.to(roomId).emit("secret_screen", {
+      text: "KONTROL SENDE MI SANIYORSUN ?"
+    });
+  });
+
   socket.on("join", ({ roomId, role, hostToken }) => {
     const room = rooms.get(roomId);
     if (!room) return socket.emit("error_msg", "Room not found");
@@ -154,12 +165,11 @@ io.on("connection", (socket) => {
     const colorIndex = Math.floor(Math.random() * 3);
 
     io.to(roomId).emit("spawn", { choice, x, y, colorIndex });
-
-    // counts broadcast (şimdilik UI göstermiyor ama lazım olursa var)
     io.to(roomId).emit("counts", room.counts);
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Running on http://localhost:${PORT}`);
+// ✅ Render uyumu (PORT + 0.0.0.0)
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Listening on 0.0.0.0:${PORT}`);
 });
