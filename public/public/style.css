@@ -1,0 +1,155 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+:root{
+  --bg: #000000;
+  --box: #ffffff;
+  --text: #ffffff;
+
+  --g0: #7CFF6B;
+  --g1: #32CD32;
+  --g2: #1E7F3A;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family: "Press Start 2P", monospace;
+  overflow:hidden;
+}
+
+#topbar{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+
+#countdownWrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  pointer-events:none;
+}
+
+#countdown{
+  font-weight:700;
+  letter-spacing: 2px;
+  font-size:28px;
+  line-height:1;
+}
+
+#timeBlocks{
+  display:flex;
+  gap:6px;
+}
+.timeBlock{
+  width:18px;
+  height:12px;
+  background:#fff;
+}
+
+#level{
+  position:fixed;
+  right:16px;
+  top:16px;
+  font-weight:700;
+  letter-spacing:2px;
+  font-size:16px;
+  pointer-events:none;
+}
+
+#stage{
+  position:absolute;
+  top:72px;
+  left:0;
+  right:0;
+  bottom:0;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:24px;
+  padding:24px;
+}
+
+.boxWrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  height:100%;
+}
+
+.choiceBox{
+  width:100%;
+  height:100%;
+  background:var(--box);
+  position:relative;
+  cursor:pointer;
+  user-select:none;
+  image-rendering: pixelated;
+}
+
+.choiceBox.disabled{
+  cursor:default;
+}
+
+.choiceBox.winnerA,
+.choiceBox.winnerB{
+  background: var(--g1);
+}
+
+.canvasLayer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+.label{
+  color:#fff;
+  font-weight:700;
+  letter-spacing:4px;
+  font-size:18px;
+}
+
+#hostPanel{
+  position:fixed;
+  left:16px;
+  top:16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  z-index:10;
+}
+
+#hostPanel button{
+  background:#111;
+  color:#fff;
+  border:1px solid #333;
+  padding:10px 12px;
+  cursor:pointer;
+  font-weight:700;
+  letter-spacing:1px;
+}
+
+#hostPanel .link{
+  max-width:320px;
+  font-size:12px;
+  opacity:.9;
+  word-break:break-all;
+}
+
+#qr{
+  background:#fff;
+  padding:8px;
+  display:inline-block;
+}
