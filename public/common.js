@@ -1,0 +1,118 @@
+// ---------- Player ID ----------
+export function getPlayerId() {
+  const k = "tigi_player_id";
+  let v = localStorage.getItem(k);
+  if (!v) {
+    v = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now();
+    localStorage.setItem(k, v);
+  }
+  return v;
+}
+
+// ---------- Colors ----------
+export const GREENS = ["#7CFF6B", "#32CD32", "#1E7F3A"];
+
+// ---------- 8-bit SFX (A ve B farklı) ----------
+export const SFX = (() => {
+  let ctx = null;
+  let master = null;
+
+  function ensure() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = 0.12;
+    master.connect(ctx.destination);
+  }
+
+  async function unlock() {
+    ensure();
+    if (ctx.state === "suspended") await ctx.resume();
+  }
+
+  function tone({ freq = 440, when = 0, attack = 0.001, decay = 0.03, vol = 0.85, type = "square" } = {}) {
+    ensure();
+    const t0 = ctx.currentTime + when;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+
+    osc.connect(g);
+    g.connect(master);
+
+    osc.start(t0);
+    osc.stop(t0 + attack + decay + 0.02);
+  }
+
+  async function clickA() {
+    await unlock();
+    tone({ freq: 988, decay: 0.02, vol: 0.85 });             // A sesi
+    tone({ freq: 1319, when: 0.03, decay: 0.02, vol: 0.6 }); // chirp
+  }
+
+  async function clickB() {
+    await unlock();
+    tone({ freq: 659, decay: 0.03, vol: 0.85 });             // B sesi
+    tone({ freq: 523, when: 0.04, decay: 0.03, vol: 0.7 });  // düşüş
+  }
+
+  return { clickA, clickB };
+})();
+
+// ---------- Canvas helpers ----------
+export function setupCanvas(canvas) {
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+  return { ctx, resize };
+}
+
+export function clearCanvas(ctx, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  ctx.clearRect(0, 0, rect.width, rect.height);
+}
+
+export function drawPixel(ctx, canvas, { x01, y01, size = 8, color = "#32CD32" }) {
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
+  const x = Math.floor(x01 * (w - size));
+  const y = Math.floor(y01 * (h - size));
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, size, size);
+}
+
+// ---------- UI helpers ----------
+export function setLevelText(el, level) {
+  el.textContent = `LEVEL ${level}`;
+}
+
+export function renderTimeBlocks(container, remainingMs, totalMs) {
+  const n = 10;
+  const per = totalMs / n;
+  const left = Math.max(0, remainingMs);
+  const blocksOn = Math.ceil(left / per);
+
+  container.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement("div");
+    b.className = "timeBlock";
+    if (i >= blocksOn) b.style.opacity = "0";
+    container.appendChild(b);
+  }
+}

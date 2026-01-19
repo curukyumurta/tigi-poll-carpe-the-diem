@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TIGI A/B</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="topbar">
+    <div id="countdownWrap">
+      <div id="countdown">--</div>
+      <div id="timeBlocks"></div>
+    </div>
+  </div>
+
+  <div id="level">LEVEL 1</div>
+
+  <div id="stage">
+    <div class="boxWrap">
+      <div id="boxA" class="choiceBox">
+        <canvas id="canvasA" class="canvasLayer"></canvas>
+      </div>
+      <div class="label">A</div>
+    </div>
+
+    <div class="boxWrap">
+      <div id="boxB" class="choiceBox">
+        <canvas id="canvasB" class="canvasLayer"></canvas>
+      </div>
+      <div class="label">B</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
+    import { getPlayerId, GREENS, SFX, setupCanvas, clearCanvas, drawPixel, setLevelText, renderTimeBlocks } from "/common.js";
+
+    const roomId = new URLSearchParams(location.search).get("room");
+    if (!roomId) {
+      document.body.innerHTML = "<div style='color:#fff;padding:24px'>room param yok. Örnek: /player.html?room=ABC123</div>";
+      throw new Error("Missing room");
+    }
+
+    const playerId = getPlayerId();
+    const socket = io(); // same origin
+
+    const boxA = document.getElementById("boxA");
+    const boxB = document.getElementById("boxB");
+    const canvasA = document.getElementById("canvasA");
+    const canvasB = document.getElementById("canvasB");
+    const countdownEl = document.getElementById("countdown");
+    const blocksEl = document.getElementById("timeBlocks");
+    const levelEl = document.getElementById("level");
+
+    const ca = setupCanvas(canvasA);
+    const cb = setupCanvas(canvasB);
+
+    let phase = "IDLE";
+    let endsAt = null;
+    let votedThisRound = false;
+    const TOTAL_MS = 10_000;
+
+    function setDisabled(dis){
+      boxA.classList.toggle("disabled", dis);
+      boxB.classList.toggle("disabled", dis);
+    }
+
+    function resetVisual(){
+      boxA.classList.remove("winnerA");
+      boxB.classList.remove("winnerB");
+      clearCanvas(ca.ctx, canvasA);
+      clearCanvas(cb.ctx, canvasB);
+      votedThisRound = false;
+      setDisabled(true);
+      countdownEl.textContent = "--";
+      blocksEl.innerHTML = "";
+    }
+
+    function showWinner(winner){
+      if (winner === "A") boxA.classList.add("winnerA");
+      if (winner === "B") boxB.classList.add("winnerB");
+      // TIE: hiçbir şey
+    }
+
+    // Click handlers: ses anında çalar, sonra oy gönderilir
+    boxA.addEventListener("click", async () => {
+      if (phase !== "VOTING") return;
+      if (votedThisRound) return;
+      votedThisRound = true;
+      setDisabled(true);
+      await SFX.clickA();
+      socket.emit("vote", { roomId, choice: "A", playerId });
+    });
+
+    boxB.addEventListener("click", async () => {
+      if (phase !== "VOTING") return;
+      if (votedThisRound) return;
+      votedThisRound = true;
+      setDisabled(true);
+      await SFX.clickB();
+      socket.emit("vote", { roomId, choice: "B", playerId });
+    });
+
+    socket.on("connect", () => {
+      socket.emit("join", { roomId, role: "player" });
+    });
+
+    socket.on("state", (s) => {
+      phase = s.phase;
+      endsAt = s.endsAt;
+      setLevelText(levelEl, s.level);
+      if (phase === "IDLE") resetVisual();
+      if (phase !== "VOTING") setDisabled(true);
+    });
+
+    socket.on("round_started", ({ level, endsAt: ea }) => {
+      phase = "VOTING";
+      endsAt = ea;
+      setLevelText(levelEl, level);
+      votedThisRound = false;
+      setDisabled(false);
+      clearCanvas(ca.ctx, canvasA);
+      clearCanvas(cb.ctx, canvasB);
+      boxA.classList.remove("winnerA");
+      boxB.classList.remove("winnerB");
+    });
+
+    socket.on("spawn", ({ choice, x, y, colorIndex }) => {
+      const color = GREENS[colorIndex] || GREENS[1];
+      const size = 8;
+      if (choice === "A") drawPixel(ca.ctx, canvasA, { x01: x, y01: y, size, color });
+      else drawPixel(cb.ctx, canvasB, { x01: x, y01: y, size, color });
+    });
+
+    socket.on("round_ended", ({ winner }) => {
+      phase = "REVEAL";
+      setDisabled(true);
+      showWinner(winner);
+    });
+
+    socket.on("round_reset", ({ level }) => {
+      phase = "IDLE";
+      endsAt = null;
+      setLevelText(levelEl, level);
+      resetVisual();
+    });
+
+    function tick(){
+      if (phase === "VOTING" && endsAt){
+        const rem = endsAt - Date.now();
+        const sec = Math.max(0, Math.ceil(rem / 1000));
+        countdownEl.textContent = String(sec).padStart(2, "0");
+        renderTimeBlocks(blocksEl, rem, TOTAL_MS);
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    socket.on("error_msg", (m) => alert(m));
+  </script>
+</body>
+</html>

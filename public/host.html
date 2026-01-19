@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TIGI Host</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="hostPanel">
+    <button id="createRoomBtn">CREATE ROOM</button>
+    <button id="startBtn" disabled>START ROUND</button>
+    <div class="link" id="links"></div>
+    <div id="qr"></div>
+  </div>
+
+  <iframe id="preview" style="position:fixed;inset:0;border:0;width:100%;height:100%;"></iframe>
+
+  <script type="module">
+    import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
+
+    const createRoomBtn = document.getElementById("createRoomBtn");
+    const startBtn = document.getElementById("startBtn");
+    const linksEl = document.getElementById("links");
+    const qrEl = document.getElementById("qr");
+    const preview = document.getElementById("preview");
+
+    let roomId = null;
+    let hostToken = null;
+    let socket = null;
+
+    function baseUrl(){
+      return location.origin;
+    }
+
+    function setPreview(){
+      preview.src = `/player.html?room=${encodeURIComponent(roomId)}`;
+    }
+
+    function renderQR(playerUrl){
+      qrEl.innerHTML = "";
+      new QRCode(qrEl, {
+        text: playerUrl,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    async function createRoom(){
+      const r = await fetch("/api/create-room", { method: "POST" });
+      const data = await r.json();
+      roomId = data.roomId;
+      hostToken = data.hostToken;
+
+      const playerUrl = `${baseUrl()}/player.html?room=${roomId}`;
+      const hostUrl = `${baseUrl()}/host.html?room=${roomId}&token=${hostToken}`;
+
+      linksEl.innerHTML = `
+        <div><b>ROOM:</b> ${roomId}</div>
+        <div><b>PLAYER:</b> ${playerUrl}</div>
+        <div><b>HOST:</b> ${hostUrl}</div>
+      `;
+      renderQR(playerUrl);
+      setPreview();
+
+      if (socket) socket.disconnect();
+      socket = io();
+      socket.on("connect", () => {
+        socket.emit("join", { roomId, role: "host", hostToken });
+      });
+      socket.on("state", () => startBtn.disabled = false);
+      socket.on("error_msg", (m) => alert(m));
+
+      startBtn.disabled = false;
+    }
+
+    function bootFromParams(){
+      const p = new URLSearchParams(location.search);
+      const r = p.get("room");
+      const t = p.get("token");
+      if (r && t){
+        roomId = r;
+        hostToken = t;
+
+        const playerUrl = `${baseUrl()}/player.html?room=${roomId}`;
+        const hostUrl = `${baseUrl()}/host.html?room=${roomId}&token=${hostToken}`;
+
+        linksEl.innerHTML = `
+          <div><b>ROOM:</b> ${roomId}</div>
+          <div><b>PLAYER:</b> ${playerUrl}</div>
+          <div><b>HOST:</b> ${hostUrl}</div>
+        `;
+        renderQR(playerUrl);
+        setPreview();
+
+        socket = io();
+        socket.on("connect", () => {
+          socket.emit("join", { roomId, role: "host", hostToken });
+        });
+        socket.on("state", () => startBtn.disabled = false);
+        socket.on("error_msg", (m) => alert(m));
+
+        startBtn.disabled = false;
+      }
+    }
+
+    createRoomBtn.addEventListener("click", createRoom);
+
+    startBtn.addEventListener("click", () => {
+      if (!socket || !roomId || !hostToken) return;
+      socket.emit("host_start", { roomId, hostToken });
+    });
+
+    bootFromParams();
+  </script>
+</body>
+</html>
