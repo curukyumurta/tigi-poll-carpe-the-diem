@@ -114,17 +114,22 @@
       if (phase !== "VOTING") setDisabled(true);
     });
 
-    socket.on("round_started", ({ level, endsAt: ea }) => {
-      phase = "VOTING";
-      endsAt = ea;
-      setLevelText(levelEl, level);
-      votedThisRound = false;
-      setDisabled(false);
-      clearCanvas(ca.ctx, canvasA);
-      clearCanvas(cb.ctx, canvasB);
-      boxA.classList.remove("winnerA");
-      boxB.classList.remove("winnerB");
-    });
+socket.on("round_started", async ({ level, endsAt: ea }) => {
+  phase = "VOTING";
+  endsAt = ea;
+  setLevelText(levelEl, level);
+  votedThisRound = false;
+  setDisabled(false);
+
+  clearCanvas(ca.ctx, canvasA);
+  clearCanvas(cb.ctx, canvasB);
+  boxA.classList.remove("winnerA");
+  boxB.classList.remove("winnerB");
+
+  // 🔊 ROUND START JINGLE
+  await SFX.roundStart();
+});
+
 
     socket.on("spawn", ({ choice, x, y, colorIndex }) => {
       const color = GREENS[colorIndex] || GREENS[1];

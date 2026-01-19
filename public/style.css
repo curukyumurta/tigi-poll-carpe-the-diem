@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
 :root{
   --bg: #000000;
   --box: #ffffff;
@@ -14,7 +16,7 @@ body{
   margin:0;
   background:var(--bg);
   color:var(--text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: "Press Start 2P", monospace;
   overflow:hidden;
 }
 
