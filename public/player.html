@@ -93,6 +93,23 @@
     ">OYUN BITTI</div>
   </div>
 
+  <!-- 🌈 GLITCH OVERLAY -->
+  <div id="glitchOverlay" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#000;
+    z-index:1200000;
+    align-items:center;
+    justify-content:center;
+  ">
+    <canvas id="glitchCanvas" style="
+      width:100vw;
+      height:100vh;
+      image-rendering:pixelated;
+    "></canvas>
+  </div>
+
   <script type="module">
     import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
     import { getPlayerId, GREENS, SFX, setupCanvas, clearCanvas, drawPixel, setLevelText, renderTimeBlocks } from "/common.js";
@@ -124,6 +141,11 @@
 
     const gameoverOverlay = document.getElementById("gameoverOverlay");
     const gameoverText = document.getElementById("gameoverText");
+
+    const glitchOverlay = document.getElementById("glitchOverlay");
+    const glitchCanvas = document.getElementById("glitchCanvas");
+    const glitchCtx = glitchCanvas.getContext("2d");
+    glitchCtx.imageSmoothingEnabled = false;
 
     const ca = setupCanvas(canvasA);
     const cb = setupCanvas(canvasB);
@@ -192,6 +214,108 @@
       }
     }
 
+    function resizeGlitchCanvas(){
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.floor(window.innerWidth / 2);
+      const h = Math.floor(window.innerHeight / 2);
+      glitchCanvas.width = Math.floor(w * dpr);
+      glitchCanvas.height = Math.floor(h * dpr);
+      glitchCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resizeGlitchCanvas);
+    resizeGlitchCanvas();
+
+    function hsvToRgb(h, s, v){
+      let c = v * s;
+      let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      let m = v - c;
+      let r=0,g=0,b=0;
+      if (h < 60) { r=c; g=x; b=0; }
+      else if (h < 120) { r=x; g=c; b=0; }
+      else if (h < 180) { r=0; g=c; b=x; }
+      else if (h < 240) { r=0; g=x; b=c; }
+      else if (h < 300) { r=x; g=0; b=c; }
+      else { r=c; g=0; b=x; }
+      return {
+        r: Math.round((r+m)*255),
+        g: Math.round((g+m)*255),
+        b: Math.round((b+m)*255)
+      };
+    }
+
+    function randColor(){
+      const h = Math.random() * 360;
+      const s = 0.85 + Math.random() * 0.15;
+      const v = 0.75 + Math.random() * 0.25;
+      const {r,g,b} = hsvToRgb(h, s, v);
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function drawGlitchFrame(){
+      const w = glitchCanvas.getBoundingClientRect().width;
+      const h = glitchCanvas.getBoundingClientRect().height;
+
+      glitchCtx.clearRect(0, 0, w, h);
+      glitchCtx.fillStyle = "#000";
+      glitchCtx.fillRect(0, 0, w, h);
+
+      const cell = 6;
+      const snap = (n) => Math.floor(n / cell) * cell;
+
+      // ✅ daha yoğun: 80-140
+      const shapes = 80 + Math.floor(Math.random() * 61);
+
+      for (let i = 0; i < shapes; i++) {
+        glitchCtx.fillStyle = randColor();
+
+        const kind = Math.random();
+        if (kind < 0.45) {
+          const ww = snap(60 + Math.random() * 260);
+          const hh = snap(6 + Math.random() * 28);
+          const x = snap(Math.random() * (w - ww));
+          const y = snap(Math.random() * (h - hh));
+          glitchCtx.fillRect(x, y, ww, hh);
+        } else if (kind < 0.8) {
+          const s = snap(16 + Math.random() * 80);
+          const x = snap(Math.random() * (w - s));
+          const y = snap(Math.random() * (h - s));
+          glitchCtx.fillRect(x, y, s, s);
+        } else {
+          const s = snap(6 + Math.random() * 18);
+          const x = snap(Math.random() * (w - s));
+          const y = snap(Math.random() * (h - s));
+          glitchCtx.fillRect(x, y, s, s);
+        }
+      }
+
+      const lines = 1 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < lines; i++) {
+        glitchCtx.fillStyle = randColor();
+        const y = snap(Math.random() * h);
+        glitchCtx.fillRect(0, y, w, snap(2 + Math.random() * 6));
+      }
+    }
+
+    async function runGlitch(frames = 10, frameMs = 200){
+      glitchOverlay.style.display = "flex";
+      glitchOverlay.style.pointerEvents = "auto";
+      setDisabled(true);
+
+      const totalDuration = frames * frameMs;
+
+      // ✅ görüntü boyunca glitch bed
+      const soundPromise = SFX.glitchBed(totalDuration);
+
+      for (let i = 0; i < frames; i++){
+        drawGlitchFrame();
+        await new Promise(r => setTimeout(r, frameMs));
+      }
+
+      glitchOverlay.style.display = "none";
+      await soundPromise;
+    }
+
+    // clicks
     boxA.addEventListener("click", async () => {
       if (phase !== "VOTING") return;
       if (votedThisRound) return;
@@ -257,7 +381,7 @@
       resetVisual();
     });
 
-    // 🔴 SECRET SCREEN
+    // overlays
     socket.on("secret_screen", async ({ text }) => {
       secretText.textContent = text || "KONTROL SENDE MI SANIYORSUN ?";
       secretOverlay.style.display = "flex";
@@ -271,7 +395,6 @@
       }, 2500);
     });
 
-    // 🙂 TROLLFACE SCREEN
     socket.on("trollface_screen", async ({ durationMs }) => {
       drawTrollFace();
       trollOverlay.style.display = "flex";
@@ -286,7 +409,6 @@
       }, ms);
     });
 
-    // 🟥 OYUN BITTI SCREEN
     socket.on("gameover_screen", async ({ durationMs, text }) => {
       gameoverText.textContent = text || "OYUN BITTI";
       gameoverOverlay.style.display = "flex";
@@ -299,6 +421,12 @@
       setTimeout(() => {
         gameoverOverlay.style.display = "none";
       }, ms);
+    });
+
+    socket.on("glitch_screen", async ({ frames, frameMs }) => {
+      const f = typeof frames === "number" ? frames : 10;
+      const ms = typeof frameMs === "number" ? frameMs : 200;
+      await runGlitch(f, ms);
     });
 
     function tick(){

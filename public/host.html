@@ -27,6 +27,7 @@
       <button id="secretBtn" disabled>???</button>
       <button id="trollBtn" disabled>TROLLFACE</button>
       <button id="gameoverBtn" disabled>OYUN BITTI</button>
+      <button id="glitchBtn" disabled>GLITCH</button>
     </div>
 
     <div class="link" id="links" style="margin-top:10px;color:#fff;font-size:12px;line-height:1.35;"></div>
@@ -43,6 +44,7 @@
     const secretBtn = document.getElementById("secretBtn");
     const trollBtn = document.getElementById("trollBtn");
     const gameoverBtn = document.getElementById("gameoverBtn");
+    const glitchBtn = document.getElementById("glitchBtn");
 
     const linksEl = document.getElementById("links");
     const qrEl = document.getElementById("qr");
@@ -75,6 +77,7 @@
       secretBtn.disabled = false;
       trollBtn.disabled = false;
       gameoverBtn.disabled = false;
+      glitchBtn.disabled = false;
     }
 
     async function createRoom(){
@@ -158,6 +161,11 @@
     gameoverBtn.addEventListener("click", () => {
       if (!socket || !roomId || !hostToken) return;
       socket.emit("host_gameover", { roomId, hostToken });
+    });
+
+    glitchBtn.addEventListener("click", () => {
+      if (!socket || !roomId || !hostToken) return;
+      socket.emit("host_glitch", { roomId, hostToken });
     });
 
     bootFromParams();

@@ -104,7 +104,6 @@ app.post("/api/create-room", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  // ✅ Gizli ekran
   socket.on("host_secret", ({ roomId, hostToken }) => {
     const room = rooms.get(roomId);
     if (!room) return;
@@ -115,7 +114,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // 🙂 Plot Button: TROLLFACE
   socket.on("host_trollface", ({ roomId, hostToken }) => {
     const room = rooms.get(roomId);
     if (!room) return;
@@ -126,7 +124,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // 🟥 Plot Button: OYUN BITTI
   socket.on("host_gameover", ({ roomId, hostToken }) => {
     const room = rooms.get(roomId);
     if (!room) return;
@@ -135,6 +132,18 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("gameover_screen", {
       durationMs: 2000,
       text: "OYUN BITTI"
+    });
+  });
+
+  // ✅ GLITCH: 10 frame x 0.2s = 2s
+  socket.on("host_glitch", ({ roomId, hostToken }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    if (hostToken !== room.hostToken) return;
+
+    io.to(roomId).emit("glitch_screen", {
+      frames: 10,
+      frameMs: 200
     });
   });
 
