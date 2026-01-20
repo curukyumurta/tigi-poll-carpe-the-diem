@@ -114,7 +114,34 @@ export const SFX = (() => {
     }
   }
 
-  return { clickA, clickB, roundStart, secretBuzz, plotSmile };
+  // 🟥 OYUN BITTI: 25 nota, tiz + daha vibratolu
+  async function plotGameOver() {
+    await unlock();
+
+    const base1 = 980;    // tiz
+    const base2 = 1180;   // daha tiz
+    const total = 25;
+    const step = 0.04;    // makine gibi
+    const decay = 0.03;
+
+    const vibrato = 28;   // daha vibratolu (Hz)
+    // (not: burada vibrato "nota başına" dalgalanıyor, kulağa titrek gelir)
+
+    for (let i = 0; i < total; i++) {
+      const base = i % 2 === 0 ? base1 : base2;
+      const wobble = Math.sin(i * 1.7) * vibrato;
+
+      tone({
+        freq: base + wobble,
+        when: i * step,
+        decay,
+        vol: 0.9,
+        type: "square"
+      });
+    }
+  }
+
+  return { clickA, clickB, roundStart, secretBuzz, plotSmile, plotGameOver };
 })();
 
 // ---------- Canvas helpers ----------

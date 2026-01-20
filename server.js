@@ -73,7 +73,6 @@ function endRound(roomId, revealMs = 900) {
   });
 
   room.timers.revealTimeout = setTimeout(() => {
-    // reset state + level up
     room.level += 1;
     room.phase = "IDLE";
     room.endsAt = null;
@@ -105,7 +104,7 @@ app.post("/api/create-room", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  // ✅ Gizli ekran (mevcut)
+  // ✅ Gizli ekran
   socket.on("host_secret", ({ roomId, hostToken }) => {
     const room = rooms.get(roomId);
     if (!room) return;
@@ -124,6 +123,18 @@ io.on("connection", (socket) => {
 
     io.to(roomId).emit("trollface_screen", {
       durationMs: 1800
+    });
+  });
+
+  // 🟥 Plot Button: OYUN BITTI
+  socket.on("host_gameover", ({ roomId, hostToken }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    if (hostToken !== room.hostToken) return;
+
+    io.to(roomId).emit("gameover_screen", {
+      durationMs: 2000,
+      text: "OYUN BITTI"
     });
   });
 
@@ -170,7 +181,6 @@ io.on("connection", (socket) => {
 
     room.counts[choice] += 1;
 
-    // Spawn pixel: 0..1 relative coords, 3 green tones
     const x = Math.random();
     const y = Math.random();
     const colorIndex = Math.floor(Math.random() * 3);
@@ -180,7 +190,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Render uyumu (PORT + 0.0.0.0)
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Listening on 0.0.0.0:${PORT}`);
 });

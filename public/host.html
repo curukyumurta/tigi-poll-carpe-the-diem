@@ -8,7 +8,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body style="margin:0;">
-  <!-- HOST PANEL: her zaman ustte -->
   <div id="hostPanel" style="
     position:fixed;
     top:16px;
@@ -27,13 +26,13 @@
       <button id="startBtn" disabled>START ROUND</button>
       <button id="secretBtn" disabled>???</button>
       <button id="trollBtn" disabled>TROLLFACE</button>
+      <button id="gameoverBtn" disabled>OYUN BITTI</button>
     </div>
 
     <div class="link" id="links" style="margin-top:10px;color:#fff;font-size:12px;line-height:1.35;"></div>
     <div id="qr" style="margin-top:10px;"></div>
   </div>
 
-  <!-- PREVIEW: arkada -->
   <iframe id="preview" style="position:fixed;inset:0;border:0;width:100%;height:100%;z-index:0;"></iframe>
 
   <script type="module">
@@ -43,6 +42,7 @@
     const startBtn = document.getElementById("startBtn");
     const secretBtn = document.getElementById("secretBtn");
     const trollBtn = document.getElementById("trollBtn");
+    const gameoverBtn = document.getElementById("gameoverBtn");
 
     const linksEl = document.getElementById("links");
     const qrEl = document.getElementById("qr");
@@ -74,6 +74,7 @@
       startBtn.disabled = false;
       secretBtn.disabled = false;
       trollBtn.disabled = false;
+      gameoverBtn.disabled = false;
     }
 
     async function createRoom(){
@@ -152,6 +153,11 @@
     trollBtn.addEventListener("click", () => {
       if (!socket || !roomId || !hostToken) return;
       socket.emit("host_trollface", { roomId, hostToken });
+    });
+
+    gameoverBtn.addEventListener("click", () => {
+      if (!socket || !roomId || !hostToken) return;
+      socket.emit("host_gameover", { roomId, hostToken });
     });
 
     bootFromParams();
