@@ -1,4 +1,4 @@
-<!doctype<!doctype html>
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -172,13 +172,15 @@
       resetVisual();
     });
 
-    // 🔴 SECRET SCREEN: tam ekran overlay ac
-    socket.on("secret_screen", ({ text }) => {
+    // 🔴 SECRET SCREEN: tam ekran overlay + 10 pes bip
+    socket.on("secret_screen", async ({ text }) => {
       secretText.textContent = text || "KONTROL SENDE MI SANIYORSUN ?";
       secretOverlay.style.display = "flex";
       secretOverlay.style.pointerEvents = "auto";
 
       setDisabled(true);
+
+      await SFX.secretBuzz();
 
       setTimeout(() => {
         secretOverlay.style.display = "none";
@@ -200,5 +202,3 @@
   </script>
 </body>
 </html>
-
-

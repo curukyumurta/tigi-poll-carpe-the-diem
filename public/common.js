@@ -61,23 +61,44 @@ export const SFX = (() => {
     tone({ freq: 659, decay: 0.03, vol: 0.85 });             // B sesi
     tone({ freq: 523, when: 0.04, decay: 0.03, vol: 0.7 });  // düşüş
   }
-async function roundStart() {
-  await unlock();
 
-  // 5 notalı 8-bit jingle
-  const notes = [784, 988, 1175, 1568, 1175]; // retro hissi
-  notes.forEach((freq, i) => {
-    tone({
-      freq,
-      when: i * 0.08,
-      decay: 0.06,
-      vol: 0.75,
-      type: "square"
+  async function roundStart() {
+    await unlock();
+
+    // 5 notalı 8-bit jingle
+    const notes = [784, 988, 1175, 1568, 1175]; // retro hissi
+    notes.forEach((freq, i) => {
+      tone({
+        freq,
+        when: i * 0.08,
+        decay: 0.06,
+        vol: 0.75,
+        type: "square"
+      });
     });
-  });
-}
+  }
 
-  return { clickA, clickB, roundStart };
+  // 🔴 SECRET: 10 aynı pes nota
+  async function secretBuzz() {
+    await unlock();
+
+    const freq = 130;   // pes (daha pes istersen 110 yap)
+    const hits = 10;    // 10 nota
+    const step = 0.07;  // aralık
+    const decay = 0.055;
+
+    for (let i = 0; i < hits; i++) {
+      tone({
+        freq,
+        when: i * step,
+        decay,
+        vol: 0.9,
+        type: "square"
+      });
+    }
+  }
+
+  return { clickA, clickB, roundStart, secretBuzz };
 })();
 
 // ---------- Canvas helpers ----------
