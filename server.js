@@ -105,7 +105,7 @@ app.post("/api/create-room", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  // ✅ Gizli ekran: host tetikler, herkes görür
+  // ✅ Gizli ekran (mevcut)
   socket.on("host_secret", ({ roomId, hostToken }) => {
     const room = rooms.get(roomId);
     if (!room) return;
@@ -113,6 +113,17 @@ io.on("connection", (socket) => {
 
     io.to(roomId).emit("secret_screen", {
       text: "KONTROL SENDE MI SANIYORSUN ?"
+    });
+  });
+
+  // 🙂 Plot Button: TROLLFACE
+  socket.on("host_trollface", ({ roomId, hostToken }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    if (hostToken !== room.hostToken) return;
+
+    io.to(roomId).emit("trollface_screen", {
+      durationMs: 1800
     });
   });
 

@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <!-- 🔴 SECRET OVERLAY: TAM EKRAN, OYUNUN USTUNE BINER -->
+  <!-- 🔴 SECRET OVERLAY -->
   <div id="secretOverlay" style="
     display:none;
     position:fixed;
@@ -52,6 +52,24 @@
       text-transform:uppercase;
       width:100%;
     ">KONTROL SENDE MI SANIYORSUN ?</div>
+  </div>
+
+  <!-- 🙂 TROLLFACE OVERLAY -->
+  <div id="trollOverlay" style="
+    display:none;
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    background:#000;
+    z-index:1000000;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  ">
+    <canvas id="trollCanvas" width="256" height="256" style="
+      width:min(70vw, 320px);
+      height:min(70vw, 320px);
+      image-rendering:pixelated;
+    "></canvas>
   </div>
 
   <script type="module">
@@ -77,6 +95,11 @@
 
     const secretOverlay = document.getElementById("secretOverlay");
     const secretText = document.getElementById("secretText");
+
+    const trollOverlay = document.getElementById("trollOverlay");
+    const trollCanvas = document.getElementById("trollCanvas");
+    const trollCtx = trollCanvas.getContext("2d");
+    trollCtx.imageSmoothingEnabled = false;
 
     const ca = setupCanvas(canvasA);
     const cb = setupCanvas(canvasB);
@@ -105,6 +128,44 @@
     function showWinner(winner){
       if (winner === "A") boxA.classList.add("winnerA");
       if (winner === "B") boxB.classList.add("winnerB");
+    }
+
+    function drawTrollFace(){
+      const ctx = trollCtx;
+      const W = trollCanvas.width;
+      const H = trollCanvas.height;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const grid = 16;
+      const px = Math.floor(W / grid);
+      const ON = "#ffffff";
+
+      const p = [
+        "0000000000000000",
+        "0000011111100000",
+        "0001110000111000",
+        "0011000000001100",
+        "0110001100110010",
+        "0110011101110010",
+        "1100000000000011",
+        "1100000000000011",
+        "1100000000000011",
+        "1100100000001011",
+        "0110010000010010",
+        "0110001111100010",
+        "0011000000001100",
+        "0001110000111000",
+        "0000011111100000",
+        "0000000000000000",
+      ];
+
+      ctx.fillStyle = ON;
+      for (let y = 0; y < grid; y++) {
+        for (let x = 0; x < grid; x++) {
+          if (p[y][x] === "1") ctx.fillRect(x * px, y * px, px, px);
+        }
+      }
     }
 
     boxA.addEventListener("click", async () => {
@@ -172,12 +233,11 @@
       resetVisual();
     });
 
-    // 🔴 SECRET SCREEN: tam ekran overlay + 10 pes bip
+    // 🔴 SECRET SCREEN
     socket.on("secret_screen", async ({ text }) => {
       secretText.textContent = text || "KONTROL SENDE MI SANIYORSUN ?";
       secretOverlay.style.display = "flex";
       secretOverlay.style.pointerEvents = "auto";
-
       setDisabled(true);
 
       await SFX.secretBuzz();
@@ -185,6 +245,21 @@
       setTimeout(() => {
         secretOverlay.style.display = "none";
       }, 2500);
+    });
+
+    // 🙂 TROLLFACE SCREEN
+    socket.on("trollface_screen", async ({ durationMs }) => {
+      drawTrollFace();
+      trollOverlay.style.display = "flex";
+      trollOverlay.style.pointerEvents = "auto";
+      setDisabled(true);
+
+      await SFX.plotSmile();
+
+      const ms = typeof durationMs === "number" ? durationMs : 1800;
+      setTimeout(() => {
+        trollOverlay.style.display = "none";
+      }, ms);
     });
 
     function tick(){

@@ -7,17 +7,34 @@
   <link rel="stylesheet" href="/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body>
-  <div id="hostPanel">
-    <button id="createRoomBtn">CREATE ROOM</button>
-    <button id="startBtn" disabled>START ROUND</button>
-    <button id="secretBtn" disabled>???</button>
+<body style="margin:0;">
+  <!-- HOST PANEL: her zaman ustte -->
+  <div id="hostPanel" style="
+    position:fixed;
+    top:16px;
+    left:16px;
+    z-index:2000000;
+    background:rgba(0,0,0,0.75);
+    border:1px solid rgba(255,255,255,0.15);
+    padding:12px;
+    border-radius:10px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    max-width: min(92vw, 520px);
+  ">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button id="createRoomBtn">CREATE ROOM</button>
+      <button id="startBtn" disabled>START ROUND</button>
+      <button id="secretBtn" disabled>???</button>
+      <button id="trollBtn" disabled>TROLLFACE</button>
+    </div>
 
-    <div class="link" id="links"></div>
-    <div id="qr"></div>
+    <div class="link" id="links" style="margin-top:10px;color:#fff;font-size:12px;line-height:1.35;"></div>
+    <div id="qr" style="margin-top:10px;"></div>
   </div>
 
-  <iframe id="preview" style="position:fixed;inset:0;border:0;width:100%;height:100%;"></iframe>
+  <!-- PREVIEW: arkada -->
+  <iframe id="preview" style="position:fixed;inset:0;border:0;width:100%;height:100%;z-index:0;"></iframe>
 
   <script type="module">
     import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
@@ -25,6 +42,7 @@
     const createRoomBtn = document.getElementById("createRoomBtn");
     const startBtn = document.getElementById("startBtn");
     const secretBtn = document.getElementById("secretBtn");
+    const trollBtn = document.getElementById("trollBtn");
 
     const linksEl = document.getElementById("links");
     const qrEl = document.getElementById("qr");
@@ -55,6 +73,7 @@
     function enableHostButtons(){
       startBtn.disabled = false;
       secretBtn.disabled = false;
+      trollBtn.disabled = false;
     }
 
     async function createRoom(){
@@ -81,13 +100,9 @@
         socket.emit("join", { roomId, role: "host", hostToken });
       });
 
-      socket.on("state", () => {
-        enableHostButtons();
-      });
-
+      socket.on("state", () => enableHostButtons());
       socket.on("error_msg", (m) => alert(m));
 
-      // Oda oluşturulduğu an da butonları aç
       enableHostButtons();
     }
 
@@ -112,15 +127,10 @@
         setPreview();
 
         socket = io();
-
         socket.on("connect", () => {
           socket.emit("join", { roomId, role: "host", hostToken });
         });
-
-        socket.on("state", () => {
-          enableHostButtons();
-        });
-
+        socket.on("state", () => enableHostButtons());
         socket.on("error_msg", (m) => alert(m));
 
         enableHostButtons();
@@ -134,10 +144,14 @@
       socket.emit("host_start", { roomId, hostToken });
     });
 
-    // ✅ Gizli buton: herkesin ekranında yazıyı göster
     secretBtn.addEventListener("click", () => {
       if (!socket || !roomId || !hostToken) return;
       socket.emit("host_secret", { roomId, hostToken });
+    });
+
+    trollBtn.addEventListener("click", () => {
+      if (!socket || !roomId || !hostToken) return;
+      socket.emit("host_trollface", { roomId, hostToken });
     });
 
     bootFromParams();

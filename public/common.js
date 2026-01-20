@@ -12,7 +12,7 @@ export function getPlayerId() {
 // ---------- Colors ----------
 export const GREENS = ["#7CFF6B", "#32CD32", "#1E7F3A"];
 
-// ---------- 8-bit SFX (A ve B farklı) ----------
+// ---------- 8-bit SFX ----------
 export const SFX = (() => {
   let ctx = null;
   let master = null;
@@ -52,44 +52,38 @@ export const SFX = (() => {
 
   async function clickA() {
     await unlock();
-    tone({ freq: 988, decay: 0.02, vol: 0.85 });             // A sesi
-    tone({ freq: 1319, when: 0.03, decay: 0.02, vol: 0.6 }); // chirp
+    tone({ freq: 988, decay: 0.02, vol: 0.85 });
+    tone({ freq: 1319, when: 0.03, decay: 0.02, vol: 0.6 });
   }
 
   async function clickB() {
     await unlock();
-    tone({ freq: 659, decay: 0.03, vol: 0.85 });             // B sesi
-    tone({ freq: 523, when: 0.04, decay: 0.03, vol: 0.7 });  // düşüş
+    tone({ freq: 659, decay: 0.03, vol: 0.85 });
+    tone({ freq: 523, when: 0.04, decay: 0.03, vol: 0.7 });
   }
 
   async function roundStart() {
     await unlock();
-
-    // 5 notalı 8-bit jingle
-    const notes = [784, 988, 1175, 1568, 1175]; // retro hissi
+    const notes = [784, 988, 1175, 1568, 1175];
     notes.forEach((freq, i) => {
-      tone({
-        freq,
-        when: i * 0.08,
-        decay: 0.06,
-        vol: 0.75,
-        type: "square"
-      });
+      tone({ freq, when: i * 0.08, decay: 0.06, vol: 0.75, type: "square" });
     });
   }
 
-  // 🔴 SECRET: 10 aynı pes nota
+  // 🔴 SECRET: 10 pes bip + hafif vibrato
   async function secretBuzz() {
     await unlock();
 
-    const freq = 130;   // pes (daha pes istersen 110 yap)
-    const hits = 10;    // 10 nota
-    const step = 0.07;  // aralık
+    const baseFreq = 130;
+    const vibrato = 4;
+    const hits = 10;
+    const step = 0.07;
     const decay = 0.055;
 
     for (let i = 0; i < hits; i++) {
+      const wobble = Math.sin(i * 0.9) * vibrato;
       tone({
-        freq,
+        freq: baseFreq + wobble,
         when: i * step,
         decay,
         vol: 0.9,
@@ -98,7 +92,29 @@ export const SFX = (() => {
     }
   }
 
-  return { clickA, clickB, roundStart, secretBuzz };
+  // 🙂 TROLLFACE: 25 nota, 2 frekans, makine gibi rahatsiz
+  async function plotSmile() {
+    await unlock();
+
+    const f1 = 370;
+    const f2 = 415;
+    const total = 25;
+    const step = 0.045;
+    const decay = 0.035;
+
+    for (let i = 0; i < total; i++) {
+      const freq = i % 2 === 0 ? f1 : f2;
+      tone({
+        freq,
+        when: i * step,
+        decay,
+        vol: 0.85,
+        type: "square"
+      });
+    }
+  }
+
+  return { clickA, clickB, roundStart, secretBuzz, plotSmile };
 })();
 
 // ---------- Canvas helpers ----------
